@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แปลงไฟล์ .xls เป็น CSV UTF-8</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.05);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-list {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .file-list.show {
+            display: block;
+        }
+
+        .file-item {
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .file-name {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .file-size {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+
+        .remove-btn:hover {
+            background: #ff3838;
+        }
+
+        .convert-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 18px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: none;
+        }
+
+        .convert-btn.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .convert-btn:active {
+            transform: translateY(0);
+        }
+
+        .convert-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffe5e5;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .features {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .features h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .features ul {
+            list-style: none;
+            color: #666;
+        }
+
+        .features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 แปลงไฟล์ Excel เป็น CSV UTF-8</h1>
+        <p class="subtitle">รองรับไฟล์ .xls และ .xlsx พร้อม encoding UTF-8 สำหรับภาษาไทย</p>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">คลิกหรือลากไฟล์มาที่นี่</div>
+                <div class="upload-hint">รองรับไฟล์ .xls และ .xlsx (สูงสุด 100MB)</div>
+                <input type="file" id="fileInput" name="files" multiple accept=".xls,.xlsx">
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+            <button type="submit" class="convert-btn" id="convertBtn">แปลงไฟล์</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>กำลังแปลงไฟล์...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="features">
+            <h2>คุณสมบัติ</h2>
+            <ul>
+                <li>แปลงไฟล์ .xls และ .xlsx เป็น CSV UTF-8</li>
+                <li>รองรับการแปลงหลายไฟล์พร้อมกัน (จะรวมเป็น ZIP)</li>
+                <li>เก็บหัวคอลัมน์ไว้ครบถ้วน</li>
+                <li>ภาษาไทยแสดงผลถูกต้องใน Excel</li>
+                <li>ใช้ UTF-8 with BOM สำหรับ Excel compatibility</li>
+            </ul>
+        </div>
+
+        <div class="features" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+            <h2 style="font-size: 1.2em; color: #666;">ข้อมูลผู้พัฒนา</h2>
+            <ul style="font-size: 0.95em;">
+                <li><strong>Developer:</strong> นายปองดี ไชยจันดา (Pongdee Chaichanda)</li>
+                <li><strong>Position:</strong> หัวหน้างานวัดผลและประเมินผล</li>
+                <li><strong>Affiliation:</strong> กลุ่มบริหารวิชาการ โรงเรียนพยุห์วิทยา</li>
+                <li><strong>Contact:</strong> Teacherpchai@gmail.com</li>
+                <li><strong>Version:</strong> 1.0.0 (Beta)</li>
+            </ul>
+            <p style="margin-top: 15px; color: #999; font-size: 0.9em; font-style: italic;">
+                ระบบนี้ถูกออกแบบและพัฒนาโดยบุคลากรภายในโรงเรียน เพื่อแก้ปัญหาบริบทเฉพาะของโรงเรียนพยุห์วิทยา
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const convertBtn = document.getElementById('convertBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        let selectedFiles = [];
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files).filter(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                return ext === 'xls' || ext === 'xlsx';
+            });
+
+            if (selectedFiles.length === 0) {
+                showError('กรุณาเลือกไฟล์ .xls หรือ .xlsx เท่านั้น');
+                return;
+            }
+
+            // Update file list
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <button type="button" class="remove-btn" onclick="removeFile(${index})">ลบ</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+
+            fileList.classList.add('show');
+            convertBtn.classList.add('show');
+            error.classList.remove('show');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            
+            if (selectedFiles.length === 0) {
+                fileList.classList.remove('show');
+                convertBtn.classList.remove('show');
+                fileInput.value = '';
+            } else {
+                handleFiles(selectedFiles);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            loading.classList.remove('show');
+        }
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (selectedFiles.length === 0) {
+                showError('กรุณาเลือกไฟล์');
+                return;
+            }
+
+            convertBtn.disabled = true;
+            loading.classList.add('show');
+            error.classList.remove('show');
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            try {
+                const response = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'เกิดข้อผิดพลาดในการแปลงไฟล์');
+                }
+
+                // Download file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                const contentType = response.headers.get('content-type');
+                if (contentType === 'application/zip') {
+                    a.download = 'converted_files.zip';
+                } else {
+                    const contentDisposition = response.headers.get('content-disposition');
+                    const filename = contentDisposition 
+                        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+                        : 'converted.csv';
+                    a.download = filename;
+                }
+                
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Reset
+                selectedFiles = [];
+                fileList.classList.remove('show');
+                convertBtn.classList.remove('show');
+                fileInput.value = '';
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                convertBtn.disabled = false;
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
